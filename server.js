@@ -7,50 +7,51 @@ const PORT = process.env.PORT || 3000;
 
 app.get('/api/reports', async (req, res) => {
   try {
-    // 1. 情報が集まっているWebサイトのURLを指定（例としてニュースやまとめサイトなど）
-    const targetUrl = 'https://example.com'; // ※実際に集めたいサイトのURLを入れる
+    // 1. 入荷NowのURLを設定
+    const targetUrl = 'https://nyuka-now.com/';
     
-    // 2. サイトのHTML（Webページのデータ）を取得する
+    // 2. サイトのHTMLデータを取得
     const { data } = await axios.get(targetUrl, {
       headers: {
-        // サイト側に拒否されないよう、ブラウザからのアクセスに見せかける設定
-        'User-Agent': 'Mozilla/5.0 (iPad; CPU OS 16_0 like Mac OS X)'
+        'User-Agent': 'Mozilla/5.0 (iPad; CPU OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1'
       }
     });
 
-    // 3. cheerioを使ってHTMLを解析する
+    // 3. HTMLを解析
     const $ = cheerio.load(data);
     const reports = [];
 
-    // 4. サイト内の特定要素（例: 記事タイトルやリスト）を抜き出す
-    // ※ サイトの構造に合わせて HTMLタグやクラス名（h2, .title など）を指定します
+    // 4. 記事のタイトル（h2タグ）からポケカ関連の情報だけ抜き出す
     $('h2').each((index, element) => {
       const titleText = $(element).text().trim();
 
-      // 「ポケカ」や「入荷」「ゲット」などのキーワードが含まれる情報だけを抽出
-      if (titleText.includes('ポケカ') || titleText.includes('カード') || titleText.includes('入荷')) {
+      // タイトルに「ポケモン」または「ポケカ」が含まれる記事だけをピックアップ
+      if (titleText.includes('ポケモン') || titleText.includes('ポケカ')) {
+        // 余計な改行などを綺麗に整える
+        const cleanTitle = titleText.replace(/\s+/g, ' ');
+
         reports.push({
-          id: String(index + 1),
-          cardName: titleText,
-          shopName: "ネット速報より"
+          id: String(reports.length + 1),
+          cardName: cleanTitle,
+          shopName: "入荷Now"
         });
       }
     });
 
-    // もし何も拾えなかった場合の予備データ
+    // 万が一取得できなかった場合の予備表示
     if (reports.length === 0) {
       reports.push({
         id: "1",
-        cardName: "最新の入荷情報を確認中...",
-        shopName: "自動取得システム"
+        cardName: "ポケモンカードの最新入荷情報を検索中...",
+        shopName: "入荷Now"
       });
     }
 
-    // 5. アプリへデータを返す
+    // 5. JSONデータとして返す
     res.json(reports);
 
   } catch (error) {
-    console.error('エラー発生:', error);
+    console.error('エラーが発生しました:', error);
     res.status(500).json({ error: 'データの取得に失敗しました' });
   }
 });
