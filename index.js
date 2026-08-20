@@ -1,45 +1,63 @@
 const express = require('express');
+const cors = require('cors');
 const app = express();
 
-// Renderが指定するポート番号、またはローカル用の3000番
-const PORT = process.env.PORT || 3000;
-
-// アプリから送られてくるJSONデータを読み込むための設定
+app.use(cors());
 app.use(express.json());
 
-// 一時的なデータの保存場所（※サーバーが再起動すると消えます）
-let reports = [
-    { id: "1", storeName: "セブンイレブン駅前店", dayOfWeek: "火曜日", timeOfDay: "深夜2時" }
-];
+// --- データ保存用（一時メモリ） ---
+let reports = [];
+let chats = []; // 💬 新設：チャット保存用の箱
 
-// CORS設定（SwiftUIからアクセスしやすくするため）
-app.use((req, res, next) => {
-    res.header("Access-Control-Allow-Origin", "*");
-    res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
-    next();
-});
-
-// 窓口A：アプリにみんなのデータを渡す (GET)
+// ==========================================
+// 📦 報告（レポート）用の窓口
+// ==========================================
+// ① データを見る
 app.get('/api/reports', (req, res) => {
     res.json(reports);
 });
 
-// 窓口B：アプリから新しい報告を受け取る (POST)
+// ② データを追加する
 app.post('/api/reports', (req, res) => {
-    const { storeName, dayOfWeek, timeOfDay } = req.body;
-    
     const newReport = {
-        id: Date.now().toString(),
-        storeName: storeName || '不明な店舗',
-        dayOfWeek: dayOfWeek || '不明な曜日',
-        timeOfDay: timeOfDay || '不明な時間'
+        id: Date.now().toString(), // 削除する時のために一意のIDをつける
+        storeName: req.body.storeName,
+        dayOfWeek: req.body.dayOfWeek,
+        timeOfDay: req.body.timeOfDay
     };
-    
     reports.push(newReport);
-    res.status(201).json(newReport);
+    res.json(newReport);
 });
 
-// サーバーを起動する
+// 🗑️ ③ データを削除する（新機能！）
+app.delete('/api/reports/:id', (req, res) => {
+    const idToDelete = req.params.id;
+    // 指定されたID「以外」のものを残すことで削除を実現
+    reports = reports.filter(report => report.id !== idToDelete);
+    res.json({ message: "削除完了！" });
+});
+
+// ==========================================
+// 💬 チャット用の窓口（新機能！）
+// ==========================================
+// ④ チャットの履歴を見る
+app.get('/api/chat', (req, res) => {
+    res.json(chats);
+});
+
+// ⑤ チャットを送信する
+app.post('/api/chat', (req, res) => {
+    const newChat = {
+        id: Date.now().toString(),
+        userName: req.body.userName || "ポケカ調査員",
+        message: req.body.message
+    };
+    chats.push(newChat);
+    res.json(newChat);
+});
+
+// --- サーバー起動 ---
+const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-    console.log(`Server is running on port ${PORT}`);
+    console.log(`サーバーがポート${PORT}で動いています！`);
 });
