@@ -1,13 +1,12 @@
 {
-  "name": "pokeca-server",
+  "name": "pokeca-api",
   "version": "1.0.0",
-  "main": "server.js",
+  "description": "API server for Pokemon Card restock predictions",
+  "main": "index.js",
   "scripts": {
-    "start": "node server.js"
+    "start": "node index.js"
   },
   "dependencies": {
-    "express": "^4.19.2",
-    "axios": "^1.7.2",
-    "cheerio": "^1.0.0-rc.12"
+    "express": "^4.21.0"
   }
 }
